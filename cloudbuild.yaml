@@ -1,0 +1,6 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/simple-http:${_IMAGE_TAG}', '.' ]
+logsBucket: gs://jjzeng-cloudbuild-logs
+images:
+- 'gcr.io/$PROJECT_ID/simple-http'

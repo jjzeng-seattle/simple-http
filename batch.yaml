@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: validate-deployment
+  namespace: default
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - command:
+            - /bin/sh
+            - '-c'
+            - curl --max-time 130 simple-http.default
+          image: 'appropriate/curl:latest'
+          name: validate-deployment
+      restartPolicy: Never
