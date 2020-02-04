@@ -24,7 +24,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func healthcheck_handler(w http.ResponseWriter, r *http.Request) {
   status, ok := r.URL.Query()["status"]
-  if !ok && status[0] != "f" {
+  // if the request doesn't contain status, treat it as success.
+  if !ok || status[0] != "f" {
     fmt.Fprint(w, "OK")
   } else {
      w.WriteHeader(http.StatusInternalServerError)
