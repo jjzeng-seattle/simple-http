@@ -8,9 +8,14 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
+  build:= os.Getenv("BUILD")
+  if build == "" {
+    build = "unknown build"
+  }
+
   echo, ok := r.URL.Query()["echo"]
   if ok {
-    fmt.Fprintf(w, "You sent %s!", echo[0])
+	  fmt.Fprintf(w, "From %s: You sent %s!", build, echo[0])
   } else {
      w.WriteHeader(http.StatusInternalServerError)
      w.Write([]byte("500 - Send something to echo"))
@@ -19,7 +24,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func healthcheck_handler(w http.ResponseWriter, r *http.Request) {
   status, ok := r.URL.Query()["status"]
-  if ok && status[0] != "f" {
+  if !ok && status[0] != "f" {
     fmt.Fprint(w, "OK")
   } else {
      w.WriteHeader(http.StatusInternalServerError)
