@@ -17,8 +17,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
   if ok {
 	  fmt.Fprintf(w, "From %s: You sent %s!", build, echo[0])
   } else {
-     w.WriteHeader(http.StatusInternalServerError)
-     w.Write([]byte("500 - Send something to echo"))
+	  fmt.Fprintf(w, "From %s: Hello!", build)
   }
 }
 
