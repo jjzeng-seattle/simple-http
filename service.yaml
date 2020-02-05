@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       containers:
-        - image: gcr.io/jjzeng-knative-dev/simple-http
+        - image: gcr.io/jjzeng-knative-dev/simple-http:latest
           env:
-            - name: BUILD# The environment variable printed out by the sample app
-              value: "test build"
+            - name: BUILD
+              value: "sidecar-inject"
