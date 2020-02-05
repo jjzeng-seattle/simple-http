@@ -9,5 +9,5 @@ spec:
       containers:
         - image: gcr.io/jjzeng-knative-dev/simple-http
           env:
-            - name: TARGET # The environment variable printed out by the sample app
-              value: "from cloudrun backend JJ"
+            - name: BUILD# The environment variable printed out by the sample app
+              value: "test build"
