@@ -10,4 +10,4 @@ spec:
         - image: gcr.io/jjzeng-knative-dev/simple-http:latest
           env:
             - name: BUILD
-              value: "sidecar-inject"
+              value: "test build"
