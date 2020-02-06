@@ -23,7 +23,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func healthcheck_handler(w http.ResponseWriter, r *http.Request) {
   status, ok := r.URL.Query()["status"]
-  // if the request doesn't contain status, treat it as success.
+  // If the request doesn't contain status, treat it as success.
   if !ok || status[0] != "f" {
     fmt.Fprint(w, "OK")
   } else {
@@ -35,7 +35,13 @@ func healthcheck_handler(w http.ResponseWriter, r *http.Request) {
 func main() {
   log.Print("helloworld: starting server...")
 
+  // The caller can control the status of response by setting params.
+  // "status=f" will return 500, otherwise return 200.
+  // This is for an easy way to simulate failure.
   http.HandleFunc("/healthcheck", healthcheck_handler)
+
+  // If you send "echo=foo", the response will contain foo. Otherwise it will
+  // just say "Hello".
   http.HandleFunc("/", handler)
 
   port := os.Getenv("PORT")
