@@ -1,7 +1,7 @@
 pipeline {
   agent any
   environment {
-    GCP_PROJECT="jj-knative-dev"
+    GCP_PROJECT="jjzeng-knative-dev"
     CLOUDRUN_SERVICE="simple-http"
     CLOUDRUN_PLATFORM="gke"
     CLUSTER_NAME="jj-knative-cluster"
@@ -17,7 +17,7 @@ pipeline {
         // This is the service account key we upload as a secret file.
         withCredentials([file(credentialsId: "${SERVICE_ACCOUNT_SECRET_ID}", variable: 'SERVICE_ACCOUNT_KEY')]) {
           // Authenticate gcloud
-          sh("gcloud auth activate-service-account --key-file $SERVICE_ACCOUNT_KEY")
+          sh("gcloud auth activate-service-account --key-file ${SERVICE_ACCOUNT_KEY}")
 
           // Associate kubectl with the cluster.
           sh("gcloud container clusters get-credentials ${CLUSTER_NAME} --zone=${CLUSTER_LOCATION}")
