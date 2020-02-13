@@ -1,5 +1,4 @@
-pipeline {
-  agent any
+pipeline { agent any
   environment {
     GCP_PROJECT="jjzeng-knative-dev"
     CLOUDRUN_SERVICE="simple-http"
@@ -10,6 +9,7 @@ pipeline {
     SERVICE_ACCOUNT_SECRET_ID="83ced48e-9ec7-4381-a219-f9d6c11289cc"
 
     IMAGE_URL="gcr.io/${GCP_PROJECT}/simple-http:${BUILD_TAG}"
+    GIT_URL="https://github.com/jjzeng-seattle/simple-http.git"
   }
   stages {
     stage('Prepare') {
@@ -35,15 +35,14 @@ pipeline {
 
     stage('Cloud Build') {
       steps {
-        git url: 'https://github.com/jjzeng-seattle/simple-http.git'
-        sh("cat cloudbuild.yaml")
+        git url: "${GIT_URL}"
         sh("gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE_TAG=${BUILD_TAG}  .")
       }
     }
 
     stage('Deploy with no traffic') {
       steps {
-        sh("gcloud alpha run deploy simple-http --namespace=default --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}")
+        sh("gcloud alpha run deploy ${CLOUDRUN_SERVICE} --namespace=default --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}")
       }
     }
 
@@ -69,7 +68,7 @@ pipeline {
     }
     stage('50% Rollout tests') {
       steps {
-        sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=f")
+        sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=s")
         sh("sleep 10")
       }
     }
