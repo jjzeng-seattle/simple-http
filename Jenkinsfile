@@ -3,7 +3,7 @@ pipeline {
   environment {
     GCP_PROJECT="jj-knative-dev"
     CLOUDRUN_SERVICE="simple-http"
-    CLOUDRUN_PLATFORM="GKE"
+    CLOUDRUN_PLATFORM="gke"
     CLUSTER_NAME="jj-knative-cluster"
     CLUSTER_LOCATION="us-west1-a"
     
