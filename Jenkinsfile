@@ -1,26 +1,34 @@
 pipeline {
   agent any
   environment {
-    IMAGE_URL="gcr.io/jjzeng-knative-dev/simple-http:${BUILD_TAG}"
+    GCP_PROJECT="jj-knative-dev"
+    CLOUDRUN_SERVICE="simple-http"
+    CLOUDRUN_PLATFORM="GKE"
+    CLUSTER_NAME="jj-knative-cluster"
+    CLUSTER_LOCATION="us-west1-a"
+    
+    SERVICE_ACCOUNT_SECRET_ID="83ced48e-9ec7-4381-a219-f9d6c11289cc"
+
+    IMAGE_URL="gcr.io/${GCP_PROJECT}/simple-http:${BUILD_TAG}"
   }
   stages {
     stage('Prepare') {
       steps {
         // This is the service account key we upload as a secret file.
-        withCredentials([file(credentialsId: '83ced48e-9ec7-4381-a219-f9d6c11289cc', variable: 'SERVICE_ACCOUNT_KEY')]) {
+        withCredentials([file(credentialsId: "${SERVICE_ACCOUNT_SECRET_ID}", variable: 'SERVICE_ACCOUNT_KEY')]) {
           // Authenticate gcloud
           sh("gcloud auth activate-service-account --key-file $SERVICE_ACCOUNT_KEY")
 
           // Associate kubectl with the cluster.
-          sh("gcloud container clusters get-credentials jj-knative-cluster --zone=us-west1-a")
+          sh("gcloud container clusters get-credentials ${CLUSTER_NAME} --zone=${CLUSTER_LOCATION}")
 
           // These settings make subsequent "gcloud run" commands shorter.
-          sh("gcloud config set run/platform gke")
-          sh("gcloud config set run/cluster jj-knative-cluster")
-          sh("gcloud config set run/cluster_location us-west1-a")
+          sh("gcloud config set run/platform ${CLOUDRUN_PLATFORM}")
+          sh("gcloud config set run/cluster ${CLUSTER_NAME}")
+          sh("gcloud config set run/cluster_location ${CLUSTER_LOCATION}")
 
           // take a snapshot of the service, in case we need to rollback
-          sh("kubectl get ksvc simple-http -oyaml | grep -v resourceVersion > /tmp/${BUILD_TAG}.yaml")
+          sh("kubectl get ksvc ${CLOUDRUN_SERVICE} -oyaml | grep -v resourceVersion > /tmp/${BUILD_TAG}.yaml")
         }
       }
     }
@@ -53,17 +61,24 @@ pipeline {
     }
     stage('Add 50% traffic') {
       steps {
-        sh(" gcloud alpha run services update-traffic simple-http --to-revisions simple-http-${BUILD_TAG}=50")
+        sh("""
+           gcloud alpha run services update-traffic simple-http \
+           --to-revisions simple-http-${BUILD_TAG}=50
+        """)
         }
     }
     stage('50% Rollout tests') {
       steps {
-        sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=s")
+        sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=f")
+        sh("sleep 10")
       }
     }
     stage('Add 100% traffic') {
       steps {
-        sh(" gcloud alpha run services update-traffic simple-http --to-revisions simple-http-${BUILD_TAG}=100")
+        sh("""
+           gcloud alpha run services update-traffic simple-http\
+           --to-revisions simple-http-${BUILD_TAG}=100
+           """)
         }
     }
     stage('100% Rollout tests') {
