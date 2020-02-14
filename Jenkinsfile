@@ -9,7 +9,7 @@ pipeline { agent any
     
     SERVICE_ACCOUNT_SECRET_ID="83ced48e-9ec7-4381-a219-f9d6c11289cc"
 
-    IMAGE_URL="gcr.io/${GCP_PROJECT}/simple-http:${BUILD_TAG}"
+    IMAGE_URL="gcr.io/${GCP_PROJECT}/${CLOUDRUN_SERVICE}:${BUILD_TAG}"
     GIT_URL="https://github.com/jjzeng-seattle/simple-http.git"
     // I use a "sleep" pod to run curl inside the cluster.  You can use a different one. If jenkins 
     // is in the cluster, then you don't need a pod.
@@ -17,6 +17,7 @@ pipeline { agent any
                     returnStdout: true,
                     script: 'kubectl get pods -l "app=sleep" -o jsonpath="{.items[0].metadata.name}"'
              )}"""
+    // Here I assume the knative service exists. 
     SERVICE_URL="""${sh(
                     returnStdout: true,
                     script: "kubectl get ksvc ${CLOUDRUN_SERVICE} -o=jsonpath=\"{.status.url}\""
@@ -65,8 +66,17 @@ pipeline { agent any
 
     stage("Wait for revision ready") {
       steps {
+        timeout(60) {
+          waitUntil {
+            script {
+              def r = sh(returnStatus: true, 
+                         script: "kubectl get ksvc ${CLOUDRUN_SERVICE} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep True")
+              return (r == 0)
+            }
+          }
+        }
         // TODO: We could query the status of the newly created revision.
-        sh("sleep 10")
+        //sh("sleep 10")
       }
     }
 
@@ -104,7 +114,7 @@ pipeline { agent any
     stage('100% Rollout tests') {
       steps {
         sh("sleep 10")
-        sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=s")
+        sh("curl -f ${SERVICE_URL}/healthcheck")
       }
     }
   }
