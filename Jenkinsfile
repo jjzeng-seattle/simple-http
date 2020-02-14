@@ -70,7 +70,7 @@ pipeline { agent any
           waitUntil {
             script {
               def r = sh(returnStatus: true, 
-                         script: "kubectl get ksvc ${CLOUDRUN_SERVICE} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep True")
+                         script: "kubectl get ksvc ${CLOUDRUN_SERVICE} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep True")
               return (r == 0)
             }
           }
