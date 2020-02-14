@@ -11,6 +11,8 @@ pipeline { agent any
 
     IMAGE_URL="gcr.io/${GCP_PROJECT}/simple-http:${BUILD_TAG}"
     GIT_URL="https://github.com/jjzeng-seattle/simple-http.git"
+    // I use a "sleep" pod to run curl inside the cluster.  You can use a different one. If jenkins 
+    // is in the cluster, then you don't need a pod.
     TEST_POD="""${sh(
                     returnStdout: true,
                     script: 'kubectl get pods -l "app=sleep" -o jsonpath="{.items[0].metadata.name}"'
@@ -51,7 +53,8 @@ pipeline { agent any
 
     stage('Deploy with no traffic') {
       steps {
-        sh("gcloud alpha run deploy ${CLOUDRUN_SERVICE} --namespace=${NAME_SPACE} --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}")
+        sh("""gcloud alpha run deploy ${CLOUDRUN_SERVICE} 
+              --namespace=${NAME_SPACE} --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}""")
       }
     }
 
