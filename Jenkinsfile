@@ -11,7 +11,7 @@ pipeline { agent any
 
     IMAGE_URL="gcr.io/${GCP_PROJECT}/simple-http:${BUILD_TAG}"
     GIT_URL="https://github.com/jjzeng-seattle/simple-http.git"
-    TEST_POD=$(k get pods -l "app=sleep" -o jsonpath="{.items[0].metadata.name}")
+    TEST_POD=$(kubectl get pods -l "app=sleep" -o jsonpath="{.items[0].metadata.name}")
   }
   stages {
     stage('Prepare') {
