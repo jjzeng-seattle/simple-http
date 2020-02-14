@@ -54,7 +54,12 @@ pipeline { agent any
     stage('Deploy with no traffic') {
       steps {
         sh("""gcloud alpha run deploy ${CLOUDRUN_SERVICE} 
-              --namespace=${NAME_SPACE} --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}""")
+              --namespace=${NAME_SPACE} 
+              --image=${IMAGE_URL} 
+              --connectivity=external 
+              --set-env-vars=BUILD=${BUILD_TAG} 
+              --no-traffic 
+              --revision-suffix=${BUILD_TAG}""")
       }
     }
 
