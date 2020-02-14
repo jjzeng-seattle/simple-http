@@ -5,11 +5,13 @@ pipeline { agent any
     CLOUDRUN_PLATFORM="gke"
     CLUSTER_NAME="jj-knative-cluster"
     CLUSTER_LOCATION="us-west1-a"
+    NAME_SPACE="default"
     
     SERVICE_ACCOUNT_SECRET_ID="83ced48e-9ec7-4381-a219-f9d6c11289cc"
 
     IMAGE_URL="gcr.io/${GCP_PROJECT}/simple-http:${BUILD_TAG}"
     GIT_URL="https://github.com/jjzeng-seattle/simple-http.git"
+    TEST_POD=$(k get pods -l "app=sleep" -o jsonpath="{.items[0].metadata.name}")
   }
   stages {
     stage('Prepare') {
@@ -42,7 +44,7 @@ pipeline { agent any
 
     stage('Deploy with no traffic') {
       steps {
-        sh("gcloud alpha run deploy ${CLOUDRUN_SERVICE} --namespace=default --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}")
+        sh("gcloud alpha run deploy ${CLOUDRUN_SERVICE} --namespace=${NAME_SPACE} --image=${IMAGE_URL} --connectivity=external --set-env-vars=BUILD=${BUILD_TAG} --no-traffic --revision-suffix=${BUILD_TAG}")
       }
     }
 
@@ -55,7 +57,8 @@ pipeline { agent any
 
     stage('Verify revision') {
       steps {
-        sh("kubectl exec -it sleep-7b9758757b-7578x -- curl -f simple-http-${BUILD_TAG}-private/healthcheck")
+        //sh("kubectl exec -it sleep-7b9758757b-7578x -- curl -f simple-http-${BUILD_TAG}-private/healthcheck")
+        sh("kubectl exec -it ${TEST_POD} -- curl -f simple-http-${BUILD_TAG}-private/healthcheck")
       }
     }
     stage('Add 50% traffic') {
