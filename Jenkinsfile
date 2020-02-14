@@ -72,7 +72,10 @@ pipeline { agent any
 
     stage('Verify revision') {
       steps {
-        sh("kubectl exec -it ${TEST_POD} -- curl -f simple-http-${BUILD_TAG}-private/healthcheck")
+        sh("""kubectl exec -it ${TEST_POD} -- \
+           curl -f -H \"Knative-Serving-Namespace: default\" \
+           -H \"Knative-Serving-Revision: ${CLOUDRUN_SERVICE}-${BUILD_TAG}\" \
+           ${CLOUDRUN_SERVICE}-${BUILD_TAG}/healthcheck""")
       }
     }
     stage('Add 50% traffic') {
