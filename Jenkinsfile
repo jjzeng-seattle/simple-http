@@ -17,7 +17,7 @@ pipeline { agent any
              )}"""
     SERVICE_URL="""${sh(
                     returnStdout: true,
-                    script: 'kubectl get ksvc ${CLOUDRUN_SERVICE} -o=jsonpath="{.status.url}"'
+                    script: "kubectl get ksvc ${CLOUDRUN_SERVICE} -o=jsonpath=\"{.status.url}\""
              )}"""
   }
   stages {
@@ -85,8 +85,8 @@ pipeline { agent any
     stage('Add 100% traffic') {
       steps {
         sh("""
-           gcloud alpha run services update-traffic simple-http\
-           --to-revisions simple-http-${BUILD_TAG}=100
+           gcloud alpha run services update-traffic ${CLOUDRUN_SERVICE} \
+           --to-revisions ${CLOUDRUN_SERVICE}-${BUILD_TAG}=100
            """)
         }
     }
