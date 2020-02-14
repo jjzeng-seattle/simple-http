@@ -15,6 +15,10 @@ pipeline { agent any
                     returnStdout: true,
                     script: 'kubectl get pods -l "app=sleep" -o jsonpath="{.items[0].metadata.name}"'
              )}"""
+    SERVICE_URL="""${sh(
+                    returnStdout: true,
+                    script: 'kubectl get ksvc ${CLOUDRUN_SERVICE} -o=jsonpath="{.status.url}"'
+             )}"""
   }
   stages {
     stage('Prepare') {
@@ -60,22 +64,22 @@ pipeline { agent any
 
     stage('Verify revision') {
       steps {
-        //sh("kubectl exec -it sleep-7b9758757b-7578x -- curl -f simple-http-${BUILD_TAG}-private/healthcheck")
         sh("kubectl exec -it ${TEST_POD} -- curl -f simple-http-${BUILD_TAG}-private/healthcheck")
       }
     }
     stage('Add 50% traffic') {
       steps {
         sh("""
-           gcloud alpha run services update-traffic simple-http \
-           --to-revisions simple-http-${BUILD_TAG}=50
+           gcloud alpha run services update-traffic ${CLOUDRUN_SERVICE} \
+           --to-revisions ${CLOUDRUN_SERVICE}-${BUILD_TAG}=50
         """)
         }
     }
     stage('50% Rollout tests') {
       steps {
-        sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=s")
         sh("sleep 10")
+        //sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=s")
+        sh("curl -f ${SERVICE_URL}/healthcheck")
       }
     }
     stage('Add 100% traffic') {
@@ -88,6 +92,7 @@ pipeline { agent any
     }
     stage('100% Rollout tests') {
       steps {
+        sh("sleep 10")
         sh("curl -f http://simple-http.default.35.185.251.139.xip.io/healthcheck?status=s")
       }
     }
