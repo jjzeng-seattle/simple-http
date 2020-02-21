@@ -1,0 +1,343 @@
+{
+  "appConfig": {},
+  "expectedArtifacts": [],
+  "keepWaitingPipelines": false,
+  "lastModifiedBy": "anonymous",
+  "limitConcurrent": true,
+  "stages": [
+    {
+      "account": "jj-knative-cluster-acct",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "kind": "Service",
+          "metadata": {
+            "name": "simple-http",
+            "namespace": "spinnaker-test"
+          },
+          "spec": {
+            "template": {
+              "spec": {
+                "containers": [
+                  {
+                    "env": [
+                      {
+                        "name": "BUILD",
+                        "value": "from Spinnaker"
+                      }
+                    ],
+                    "image": "${trigger.artifacts[0].reference}"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "moniker": {
+        "app": "cloudrunexample"
+      },
+      "name": "Deploy servcie",
+      "refId": "2",
+      "requisiteStageRefIds": [],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "jj-knative-cluster-acct",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "apiVersion": "v1",
+          "kind": "ServiceAccount",
+          "metadata": {
+            "name": "test-account",
+            "namespace": "spinnaker-test"
+          }
+        },
+        {
+          "apiVersion": "rbac.authorization.k8s.io/v1",
+          "kind": "Role",
+          "metadata": {
+            "name": "test-role",
+            "namespace": "spinnaker-test"
+          },
+          "rules": [
+            {
+              "apiGroups": [
+                "*"
+              ],
+              "resources": [
+                "*"
+              ],
+              "verbs": [
+                "get",
+                "list"
+              ]
+            }
+          ]
+        },
+        {
+          "apiVersion": "rbac.authorization.k8s.io/v1",
+          "kind": "RoleBinding",
+          "metadata": {
+            "name": "test-account-binding",
+            "namespace": "spinnaker-test"
+          },
+          "roleRef": {
+            "apiGroup": "rbac.authorization.k8s.io",
+            "kind": "Role",
+            "name": "test-role"
+          },
+          "subjects": [
+            {
+              "kind": "ServiceAccount",
+              "name": "test-account",
+              "namespace": "spinnaker-test"
+            }
+          ]
+        }
+      ],
+      "moniker": {
+        "app": "cloudrunexample"
+      },
+      "name": "deploy service account",
+      "refId": "3",
+      "requisiteStageRefIds": [
+        "2"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "jj-knative-cluster-acct",
+      "alias": "runJob",
+      "application": "cloudrunexample",
+      "cloudProvider": "kubernetes",
+      "credentials": "jj-knative-cluster-acct",
+      "manifest": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+          "labels": {
+            "job-name": "validate-deployment-simple-http"
+          },
+          "name": "validate-deployment",
+          "namespace": "spinnaker-test"
+        },
+        "spec": {
+          "activeDeadlineSeconds": 30,
+          "template": {
+            "spec": {
+              "containers": [
+                {
+                  "args": [
+                    "-c",
+                    "kubectl get ksvc simple-http -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep True"
+                  ],
+                  "command": [
+                    "/bin/sh"
+                  ],
+                  "image": "bitnami/kubectl:1.12",
+                  "name": "kubectl"
+                }
+              ],
+              "restartPolicy": "Never",
+              "serviceAccountName": "test-account"
+            }
+          }
+        }
+      },
+      "name": "Validate deployment",
+      "refId": "4",
+      "requisiteStageRefIds": [
+        "3"
+      ],
+      "source": "text",
+      "type": "runJobManifest"
+    },
+    {
+      "account": "jj-knative-cluster-acct",
+      "app": "cloudrunexample",
+      "cloudProvider": "kubernetes",
+      "kinds": [
+        "job"
+      ],
+      "labelSelectors": {
+        "selectors": [
+          {
+            "key": "job-name",
+            "kind": "EQUALS",
+            "values": [
+              "validate-deployment-simple-http"
+            ]
+          }
+        ]
+      },
+      "location": "spinnaker-test",
+      "mode": "label",
+      "name": "Delete (Manifest)",
+      "options": {
+        "cascading": true
+      },
+      "refId": "5",
+      "requisiteStageRefIds": [
+        "4"
+      ],
+      "type": "deleteManifest"
+    }
+  ],
+  "triggers": [
+    {
+      "artifacts": [
+        {
+          "customKind": false,
+          "name": "gcr.io/jjzeng-knative-dev/simple-http",
+          "reference": "gcr.io/jjzeng-knative-dev/simple-http@sha256:e77896076beffcb15a4904f5a4ca255a19ac0c29569b8089556fdaaaf234d8a9",
+          "type": "docker/image",
+          "version": "sha256:e77896076beffcb15a4904f5a4ca255a19ac0c29569b8089556fdaaaf234d8a9"
+        }
+      ],
+      "attributeConstraints": {
+        "status": "SUCCESS"
+      },
+      "dryRun": false,
+      "enabled": true,
+      "expectedArtifactIds": [],
+      "id": "523de432-c392-302c-8cf2-85b7b9d7c93b",
+      "notifications": [],
+      "parameters": {},
+      "payload": {
+        "artifacts": {
+          "images": [
+            "gcr.io/jjzeng-knative-dev/simple-http"
+          ]
+        },
+        "createTime": "2020-02-19T02:26:19.712418325Z",
+        "finishTime": "2020-02-19T02:26:59.152930Z",
+        "id": "9a26889b-bc8b-4bc3-a78c-ea2ce3726e28",
+        "images": [
+          "gcr.io/jjzeng-knative-dev/simple-http"
+        ],
+        "logUrl": "https://console.cloud.google.com/gcr/builds/9a26889b-bc8b-4bc3-a78c-ea2ce3726e28?project=683779644550",
+        "logsBucket": "gs://jjzeng-cloudbuild-logs",
+        "options": {
+          "logging": "LEGACY"
+        },
+        "projectId": "jjzeng-knative-dev",
+        "results": {
+          "buildStepImages": [
+            "sha256:019a61185e46aa179ba5884332bda38398702903538cc1ff5be4518eb039c87e"
+          ],
+          "buildStepOutputs": [
+            ""
+          ],
+          "images": [
+            {
+              "digest": "sha256:e77896076beffcb15a4904f5a4ca255a19ac0c29569b8089556fdaaaf234d8a9",
+              "name": "gcr.io/jjzeng-knative-dev/simple-http",
+              "pushTiming": {
+                "endTime": "2020-02-19T02:26:58.591333831Z",
+                "startTime": "2020-02-19T02:26:53.976795260Z"
+              }
+            },
+            {
+              "digest": "sha256:e77896076beffcb15a4904f5a4ca255a19ac0c29569b8089556fdaaaf234d8a9",
+              "name": "gcr.io/jjzeng-knative-dev/simple-http:latest",
+              "pushTiming": {
+                "endTime": "2020-02-19T02:26:58.591333831Z",
+                "startTime": "2020-02-19T02:26:53.976795260Z"
+              }
+            }
+          ]
+        },
+        "source": {
+          "storageSource": {
+            "bucket": "jjzeng-knative-dev_cloudbuild",
+            "generation": "1582079179481463",
+            "object": "source/1582079177.317419-279dbcf716b54b8e85239d2cd2f9f484.tgz"
+          }
+        },
+        "sourceProvenance": {
+          "fileHashes": {
+            "gs://jjzeng-knative-dev_cloudbuild/source/1582079177.317419-279dbcf716b54b8e85239d2cd2f9f484.tgz#1582079179481463": {
+              "fileHash": [
+                {
+                  "type": "MD5",
+                  "value": "hvaMrTPflFDiFdOUsYJUPw=="
+                }
+              ]
+            }
+          },
+          "resolvedStorageSource": {
+            "bucket": "jjzeng-knative-dev_cloudbuild",
+            "generation": "1582079179481463",
+            "object": "source/1582079177.317419-279dbcf716b54b8e85239d2cd2f9f484.tgz"
+          }
+        },
+        "startTime": "2020-02-19T02:26:20.997744310Z",
+        "status": "SUCCESS",
+        "steps": [
+          {
+            "args": [
+              "build",
+              "-t",
+              "gcr.io/jjzeng-knative-dev/simple-http:latest",
+              "."
+            ],
+            "name": "gcr.io/cloud-builders/docker",
+            "pullTiming": {
+              "endTime": "2020-02-19T02:26:27.556209823Z",
+              "startTime": "2020-02-19T02:26:27.544078137Z"
+            },
+            "status": "SUCCESS",
+            "timing": {
+              "endTime": "2020-02-19T02:26:53.862732563Z",
+              "startTime": "2020-02-19T02:26:27.544078137Z"
+            }
+          }
+        ],
+        "timeout": "600s",
+        "timing": {
+          "BUILD": {
+            "endTime": "2020-02-19T02:26:53.976750864Z",
+            "startTime": "2020-02-19T02:26:26.688258687Z"
+          },
+          "FETCHSOURCE": {
+            "endTime": "2020-02-19T02:26:26.688207880Z",
+            "startTime": "2020-02-19T02:26:21.791086781Z"
+          },
+          "PUSH": {
+            "endTime": "2020-02-19T02:26:58.591384143Z",
+            "startTime": "2020-02-19T02:26:53.976793977Z"
+          }
+        }
+      },
+      "pubsubSystem": "google",
+      "rebake": false,
+      "resolvedExpectedArtifacts": [],
+      "strategy": false,
+      "subscriptionName": "gcb-account",
+      "type": "pubsub",
+      "user": "[anonymous]"
+    }
+  ],
+  "updateTs": "1582249607026"
+}
